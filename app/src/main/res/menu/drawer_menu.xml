@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:id="@+id/Main"
+          android:title="MainPage"/>
+    <item android:id="@+id/Map"
+          android:title="MapPage"/>
+    <item android:id="@+id/List"
+          android:title="ListPage"/>
+    <item android:id="@+id/Drink"
+          android:title="DrinkPage"/>
+</menu>
