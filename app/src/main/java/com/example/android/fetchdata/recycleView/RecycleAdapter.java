@@ -9,11 +9,14 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.android.fetchdata.R;
-import com.example.android.fetchdata.dataBase.WPFEntity;
+import com.example.android.fetchdata.WPFEntity;
+import com.google.firebase.firestore.FirebaseFirestore;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class RecycleAdapter extends RecyclerView.Adapter<RecycleAdapter.ViewHolder> {
+
     private List<WPFEntity> allWPF;
 
     public RecycleAdapter(List<WPFEntity> allWPF) {
@@ -41,7 +44,7 @@ public class RecycleAdapter extends RecyclerView.Adapter<RecycleAdapter.ViewHold
 
     @Override
     public void onBindViewHolder(@NonNull RecycleAdapter.ViewHolder holder, int position) {
-        holder.area.setText(allWPF.get(position).getArea());
+        holder.area.setText(allWPF.get(position).getAddress());
         holder.name.setText(allWPF.get(position).getName() + "淨水廠");
     }
 

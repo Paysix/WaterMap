@@ -6,19 +6,17 @@ import android.app.Dialog;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.os.Bundle;
-
-import androidx.annotation.NonNull;
-import androidx.annotation.UiThread;
-import androidx.core.app.ActivityCompat;
-import androidx.fragment.app.Fragment;
-
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
+import android.widget.Toast;
 
-import com.example.android.fetchdata.dataBase.WPFDataBase;
-import com.example.android.fetchdata.dataBase.WPFEntity;
+import androidx.annotation.NonNull;
+import androidx.core.app.ActivityCompat;
+import androidx.fragment.app.Fragment;
+
 import com.example.android.fetchdata.databinding.FragmentMapBinding;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
@@ -29,10 +27,15 @@ import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
+import com.google.firebase.firestore.CollectionReference;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
+import com.google.firebase.firestore.QuerySnapshot;
 
-
+import java.util.ArrayList;
 import java.util.List;
 
 public class MapFragment extends Fragment implements OnMapReadyCallback {
@@ -42,6 +45,10 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     //use to get our location
     private FusedLocationProviderClient client;
     private MarkerOptions options;
+    private String TAG = "HAHA";
+    private List<WPFEntity> WPFs = new ArrayList<>();
+    private FirebaseFirestore db = FirebaseFirestore.getInstance();
+
 
     public MapFragment() {
 
@@ -74,23 +81,40 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     @Override
     public void onMapReady(GoogleMap googleMap) {
         map = googleMap;
-
+        boolean ready = false;
         //初始化地圖鏡頭
         map.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(23.639478, 120.971412), 7.4f));
-
-        //標上淨水廠Marker
+        Toast.makeText(getActivity(),"地圖資料更新中", Toast.LENGTH_LONG);
         new Thread(() -> {
-            List<WPFEntity> allWPF = WPFDataBase.getInstance(getContext()).wpfdao().displayAll();
-            if (allWPF != null) {
-                for (int i = 0; i < allWPF.size(); i++) {
-                    int j = i;
-                    getActivity().runOnUiThread(() -> {
-                        map.addMarker(new MarkerOptions()
-                                .title(allWPF.get(j).getName() + "淨水廠")
-                                .position(new LatLng(Double.parseDouble(allWPF.get(j).getLat()), Double.parseDouble(allWPF.get(j).getLon()))));
+            db.collection("WPFdata")
+                    .get()
+                    .addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
+                        @Override
+                        public void onComplete(@NonNull Task<QuerySnapshot> task) {
+                            if (task.isSuccessful()) {
+                                for (QueryDocumentSnapshot document : task.getResult()) {
+                                    Log.d(TAG, "save");
+                                    WPFs.add(document.toObject(WPFEntity.class));
+                                }
+                            } else {
+                                Log.d(TAG, "Error getting documents: ", task.getException());
+                            }
+                        }
                     });
-                }
+            try {
+                Thread.sleep(4000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
+            getActivity().runOnUiThread(() -> {
+                for (WPFEntity e : WPFs) {
+                    Log.d(TAG, "in2");
+                    map.addMarker(new MarkerOptions()
+                            .title(e.getName() + "淨水廠")
+                            .position(new LatLng(Double.parseDouble(e.getLat()), Double.parseDouble(e.getLon()))));
+                }
+            });
+            Log.d(TAG, WPFs.size() + " iii");
         }).start();
 
         map.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {
@@ -107,7 +131,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                 new Thread(() -> {
                     if (new String("您的位置").equals(finalName))
                         return;
-                    WPFEntity wpfEntity = WPFDataBase.getInstance(getContext()).wpfdao().findDataByName(finalName);
+                    WPFEntity wpfEntity = WPFs.get(getArrayIndex(finalName));
                     getActivity().runOnUiThread(() -> {
                         Dialog WPFDialog = new Dialog(getActivity());
                         WPFDialog.setContentView(R.layout.wpf_dialog);
@@ -115,20 +139,32 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                         TextView txtName = WPFDialog.findViewById(R.id.txtName);
                         txtName.setText(wpfEntity.getName() + "淨水廠");
                         TextView txtTime = WPFDialog.findViewById(R.id.txtUpdate);
-                        txtTime.setText(wpfEntity.getUpdateTime());
+                        txtTime.setText(wpfEntity.getTime());
                         TextView txtFlu = WPFDialog.findViewById(R.id.txtFlu);
-                        txtFlu.setText(wpfEntity.getFluoride());
+                        txtFlu.setText("0");
                         TextView txtNit = WPFDialog.findViewById(R.id.txtNit);
-                        txtNit.setText(wpfEntity.getNitrate());
+                        txtNit.setText("0");
                         WPFDialog.show();
                     });
                 }).start();
                 return true;
             }
         });
+
     }
+
     //定位
-    private  void getLocation() {
+    private void getLocation() {
+        if (ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            // TODO: Consider calling
+            //    ActivityCompat#requestPermissions
+            // here to request the missing permissions, and then overriding
+            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+            //                                          int[] grantResults)
+            // to handle the case where the user grants the permission. See the documentation
+            // for ActivityCompat#requestPermissions for more details.
+            return;
+        }
         Task<Location> task = client.getLastLocation();
         task.addOnSuccessListener(new OnSuccessListener<Location>() {
             @Override
@@ -153,5 +189,14 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                 getLocation();
             }
         }
+    }
+
+    private int getArrayIndex(String name) {
+        int result = 0;
+        for (int i = 0; i < WPFs.size(); i++) {
+            if (WPFs.get(i).getName().equals(name))
+                return i;
+        }
+        return result;
     }
 }
