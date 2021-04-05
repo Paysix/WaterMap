@@ -44,7 +44,7 @@ public class RecycleAdapter extends RecyclerView.Adapter<RecycleAdapter.ViewHold
 
     @Override
     public void onBindViewHolder(@NonNull RecycleAdapter.ViewHolder holder, int position) {
-        holder.area.setText(allWPF.get(position).getAddress());
+        holder.area.setText(allWPF.get(position).getCity());
         holder.name.setText(allWPF.get(position).getName() + "淨水廠");
     }
 

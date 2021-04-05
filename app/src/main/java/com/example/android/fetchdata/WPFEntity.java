@@ -102,4 +102,5 @@ public class WPFEntity {
     public void setTime(String time) {
         this.time = time;
     }
+
 }

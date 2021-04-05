@@ -12,6 +12,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 
 import com.example.android.fetchdata.databinding.FragmentListBinding;
 import com.example.android.fetchdata.recycleView.RecycleAdapter;
+import com.example.android.fetchdata.recycleView.WPFEntityComparator;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.firestore.FirebaseFirestore;
@@ -19,6 +20,7 @@ import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 
@@ -62,6 +64,7 @@ public class ListFragment extends Fragment {
             }
             getActivity().runOnUiThread(() ->{
                 fragmentListBinding.recycleList.setLayoutManager(new LinearLayoutManager(getContext()));
+                Collections.sort(allWPF, new WPFEntityComparator());
                 fragmentListBinding.recycleList.setAdapter(new RecycleAdapter(allWPF));
             });
         }).start();
